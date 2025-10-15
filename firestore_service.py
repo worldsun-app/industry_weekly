@@ -31,13 +31,12 @@ except Exception as e:
     print("Please ensure you have set the GOOGLE_APPLICATION_CREDENTIALS environment variable correctly.")
     db = None
 
-def save_report(industry_name: str, report_data: dict):
+def save_report(report_data: dict):
     """
     將報告儲存到 Firestore。
 
     Args:
-        industry_name (str): 產業名稱，例如 "半導體".
-        report_data (dict): 包含報告內容的字典。
+        report_data (dict): 包含報告內容且必須含有 'industry_name' 鍵的字典。
     """
     if not db:
         print("Firestore client is not available. Cannot save report.")
@@ -47,11 +46,11 @@ def save_report(industry_name: str, report_data: dict):
         # 集合名稱
         collection_name = "industry_reports"
         
-        # 使用產業名稱和日期作為文件 ID，確保唯一性
+        # 從字典中獲取產業名稱來建立文件 ID
+        industry_name = report_data.get('industry_name', 'unknown_industry')
         document_id = f"{industry_name}_{datetime.utcnow().strftime('%Y-%m-%d')}"
         
-        # 在報告資料中加入產業名稱和生成時間戳
-        report_data['industry_name'] = industry_name
+        # 只需加入生成時間戳
         report_data['generated_at'] = datetime.utcnow()
         
         # 取得文件參考並設定資料

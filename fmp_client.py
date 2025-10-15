@@ -28,6 +28,11 @@ class FMPClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching from {url}: {e}")
             return None
+    
+    def get_sp500(self):
+        endpoint = "stable/sp500-constituent"
+        sp500_data = self._request(endpoint)
+        return sp500_data
 
     def get_available_sectors(self):
         endpoint = f"stable/available-sectors"

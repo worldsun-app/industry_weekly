@@ -55,3 +55,16 @@ class ReportGenerator:
             "source_events_json": json_data,
         }
         return report_data
+
+    def generate_preview_summary(self, report_part_1_text: str) -> str:
+        template = _load_prompt_template("summarize_for_preview")
+        prompt = template.format(report_part_1_text=report_part_1_text)
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=self.config
+        )
+        report_text = response.text.strip()
+        logger.info("週報文字已生成，準備轉換為結構化資料。")
+
+        return report_text
