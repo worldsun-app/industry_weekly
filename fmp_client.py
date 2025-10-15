@@ -30,16 +30,24 @@ class FMPClient:
             return None
     
     def get_sp500(self):
-        endpoint = "stable/sp500-constituent"
+        endpoint = "api/v3/sp500_constituent"
         sp500_data = self._request(endpoint)
         return sp500_data
+
+    def get_market_caps_for_list(self, symbols: list[str]):
+        """Gets market capitalization for a list of symbols in a single API call."""
+        if not symbols:
+            return None
+        symbols_string = ",".join(symbols)
+        endpoint = f"api/v3/market-capitalization/{symbols_string}"
+        market_cap_data = self._request(endpoint)
+        return market_cap_data
 
     def get_available_sectors(self):
         endpoint = f"stable/available-sectors"
         available_sectors = self._request(endpoint)
         return available_sectors
     
-
     def get_sector_pe_snapshot(self, date: str = None):
         endpoint = f"stable/sector-pe-snapshot"
         sector_pe_snapshot = self._request(endpoint, params={"date": date})
