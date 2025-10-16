@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "dotenv>=0.9.9",
+    "fastapi>=0.119.0",
     "google-cloud-firestore>=2.21.0",
     "google-genai>=1.43.0",
     "langchain-google-community>=2.0.10",
@@ -13,4 +14,5 @@ dependencies = [
     "langchain-google-vertexai>=2.1.2",
     "openai>=2.3.0",
     "requests>=2.32.5",
+    "uvicorn>=0.37.0",
 ]

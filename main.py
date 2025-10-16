@@ -38,7 +38,7 @@ class Main:
         # print(pr_snapshot)
         
         # 只處理前3個產業作為範例，以免執行時間過長
-        sectors_to_process = sectors[:1]
+        sectors_to_process = sectors[:]
 
         # --- 2. 遍歷每個產業，收集資訊並生成報告 ---
         for sector in sectors_to_process:
@@ -88,7 +88,7 @@ class Main:
             # --- 摘要結束 ---
 
             # 將產業名稱加入字典，並呼叫已更新的儲存函式
-            report_data['industry_name'] = sector
+            report_data['industry_name'] = sector['sector']
             logger.info(f"準備將 '{sector}' 的報告儲存至 Firestore...")
             save_report(report_data=report_data)
 

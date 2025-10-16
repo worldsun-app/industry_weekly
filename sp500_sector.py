@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from google.cloud import firestore
 
 from fmp_client import FMPClient
+from firestore_service import get_latest_report
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -94,17 +95,28 @@ class SP500DataUpdater:
             for sector, history in pe_by_sector.items():
                 if len(history) < 2:
                     continue
+                
+                # 對歷史紀錄中的所有 PE 值進行四捨五入
+                for item in history:
+                    if item.get('pe') is not None:
+                        item['pe'] = round(item['pe'], 2)
+
                 history.sort(key=lambda x: x['date'], reverse=True)
                 pe_today = history[0]['pe']
                 pe_7_days_ago = history[-1]['pe']
                 pe_weekly_change_percent = ((pe_today - pe_7_days_ago) / pe_7_days_ago) * 100 if pe_7_days_ago != 0 else float('inf')
+
+                # 獲取最新的報告以取得 preview_summary
+                latest_report = get_latest_report(sector)
+                preview_summary = latest_report.get('preview_summary', '') if latest_report else ''
 
                 doc_data = {
                     'sector': sector,
                     'pe_today': pe_today,
                     'pe_7_days_ago': pe_7_days_ago,
                     'pe_weekly_change_percent': round(pe_weekly_change_percent, 2),
-                    'pe_history': history
+                    'pe_history': history,
+                    'preview_summary': preview_summary
                 }
                 doc_ref = self.db.collection(collection_name).document(sector)
                 batch.set(doc_ref, doc_data, merge=True)
