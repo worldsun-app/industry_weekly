@@ -2,12 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import ReportPage from './ReportPage';
+import Navbar from './Navbar';
 
 interface IndustryData {
   industry_name: string;
   pe_today: number | null;
   pe_weekly_change_percent: number | null;
-  preview_summary: string; // Add preview_summary to IndustryData
+  preview_summary: string;
 }
 
 interface ReportData {
@@ -19,15 +22,18 @@ interface ReportData {
 
 type SortKey = 'industry_name' | 'pe_today' | 'pe_weekly_change_percent';
 
-function App() {
+interface SortConfig {
+  key: SortKey;
+  direction: 'ascending' | 'descending';
+}
+
+export const IndustryTable: React.FC = () => {
   const [industryData, setIndustryData] = useState<IndustryData[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>('industry_name');
-  const [selectedIndustry, setSelectedIndustry] = useState<IndustryData | null>(null);
-  const [report, setReport] = useState<ReportData | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'industry_name', direction: 'ascending' });
   const [hoveredIndustrySummary, setHoveredIndustrySummary] = useState<string | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number; direction: 'up' | 'down' } | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     axios.get('http://localhost:8000/api/industry-data')
@@ -41,45 +47,59 @@ function App() {
 
   const sortedIndustryData = useMemo(() => {
     let sortableData = [...industryData];
-    sortableData.sort((a, b) => {
-      if (sortKey === 'industry_name') {
-        return a.industry_name.localeCompare(b.industry_name);
-      } else {
-        const valA = a[sortKey];
-        const valB = b[sortKey];
+    if (sortConfig !== null) {
+      sortableData.sort((a, b) => {
+        const valA = a[sortConfig.key];
+        const valB = b[sortConfig.key];
+
         if (valA === null) return 1;
         if (valB === null) return -1;
-        return (valB as number) - (valA as number);
-      }
-    });
+        
+        if (valA < valB) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (valA > valB) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
     return sortableData;
-  }, [industryData, sortKey]);
+  }, [industryData, sortConfig]);
+
+  const requestSort = (key: SortKey) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIndicator = (key: SortKey) => {
+    if (sortConfig.key !== key) {
+      return null;
+    }
+    return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+  };
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleCardClick = (industry: IndustryData) => {
-    setSelectedIndustry(industry);
+  const handleRowClick = (industry: IndustryData) => {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
-
-    axios.get(`http://localhost:8000/api/industry-reports/${industry.industry_name}/${formattedDate}`)
-      .then(response => {
-        setReport(response.data);
-        setShowModal(true);
-      })
-      .catch(error => {
-        console.error('Error fetching industry report:', error);
-      });
+    navigate(`/report/${industry.industry_name}/${formattedDate}`);
   };
 
   const handleMouseEnter = (industry: IndustryData, event: React.MouseEvent) => {
+    const { clientX, clientY } = event;
+    const direction = clientY > window.innerHeight / 2 ? 'up' : 'down';
     setHoveredIndustrySummary(industry.preview_summary);
-    setTooltipPosition({ x: event.clientX, y: event.clientY });
+    setTooltipPosition({ x: clientX, y: clientY, direction });
   };
 
   const handleMouseLeave = () => {
@@ -87,11 +107,20 @@ function App() {
     setTooltipPosition(null);
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedIndustry(null);
-    setReport(null);
-  };
+  const tooltipStyle: React.CSSProperties = useMemo(() => {
+    if (!tooltipPosition) return {};
+    
+    const { x, y, direction } = tooltipPosition;
+    const top = direction === 'up' ? y - 15 : y + 15;
+    const transform = direction === 'up' ? 'translateY(-100%)' : 'translateY(0)';
+
+    return {
+      left: x + 15,
+      top: top,
+      transform: transform,
+      position: 'fixed', // Use fixed position to avoid being affected by scroll
+    };
+  }, [tooltipPosition]);
 
   return (
     <div>
@@ -100,81 +129,62 @@ function App() {
         <p>您每週的產業動態與市場洞察</p>
       </div>
       <div className="container mt-5">
-        <div className="card">
-          <div className="card-header">
-            <div className="d-flex justify-content-between align-items-center">
-              <h2 onClick={toggleCollapse} style={{ cursor: 'pointer' }}>產業</h2>
-              <div className="col-md-3">
-                <select className="form-select" value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
-                  <option value="industry_name">字母排序</option>
-                  <option value="pe_weekly_change_percent">週漲跌幅</option>
-                  <option value="pe_today">今日PE</option>
-                </select>
-              </div>
-            </div>
+        <div className="table-container">
+          <div className="table-header">
+            <h2>產業列表</h2>
           </div>
-          {!isCollapsed && (
-            <div className="card-body">
-              <div className="row">
-                {sortedIndustryData.map(industry => (
-                  <div className="col-md-4 mb-4" key={industry.industry_name}>
-                    <div 
-                      className="card h-100 industry-card" 
-                      onClick={() => handleCardClick(industry)}
-                      onMouseEnter={(e) => handleMouseEnter(industry, e)}
-                      onMouseLeave={handleMouseLeave}
-                    >
-                      <div className="card-body">
-                        <h5 className="card-title">{industry.industry_name}</h5>
-                        <div className="d-flex justify-content-between">
-                          <span>今日PE:</span>
-                          <span>{industry.pe_today ?? 'N/A'}</span>
-                        </div>
-                        <div className="d-flex justify-content-between">
-                          <span>週漲跌幅:</span>
-                          <span className={`${industry.pe_weekly_change_percent === null ? 'text-muted' : industry.pe_weekly_change_percent >= 0 ? 'text-success' : 'text-danger'}`}>
-                            {industry.pe_weekly_change_percent !== null ? `${industry.pe_weekly_change_percent.toFixed(2)}%` : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <table className="table b-table fds-all-sectors-overview table-responsive">
+            <thead>
+              <tr>
+                <th className="text-left b-table-sortable-column" onClick={() => requestSort('industry_name')}>
+                  Industry{getSortIndicator('industry_name')}
+                </th>
+                <th className="text-left b-table-sortable-column" onClick={() => requestSort('pe_today')}>
+                  Today's PE{getSortIndicator('pe_today')}
+                </th>
+                <th className="text-left b-table-sortable-column" onClick={() => requestSort('pe_weekly_change_percent')}>
+                  Weekly Change{getSortIndicator('pe_weekly_change_percent')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedIndustryData.map(industry => (
+                <tr 
+                  key={industry.industry_name} 
+                  onClick={() => handleRowClick(industry)}
+                  onMouseEnter={(e) => handleMouseEnter(industry, e)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <td>{industry.industry_name}</td>
+                  <td>{industry.pe_today ?? 'N/A'}</td>
+                  <td className={`${industry.pe_weekly_change_percent === null ? 'text-muted' : industry.pe_weekly_change_percent >= 0 ? 'text-success' : 'text-danger'}`}>
+                    {industry.pe_weekly_change_percent !== null ? `${industry.pe_weekly_change_percent.toFixed(2)}%` : 'N/A'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {hoveredIndustrySummary && tooltipPosition && (
-        <div className="tooltip-custom" style={{ top: tooltipPosition.y + 10, left: tooltipPosition.x + 10 }}>
+      {hoveredIndustrySummary && (
+        <div className="tooltip-custom" style={tooltipStyle}>
           {hoveredIndustrySummary}
         </div>
       )}
-
-      {showModal && report && (
-        <div className="modal show d-block" tabIndex={-1}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{report.title}</h5>
-                <button type="button" className="btn-close" onClick={handleCloseModal}></button>
-              </div>
-              <div className="modal-body">
-                <h6>預覽摘要</h6>
-                <p>{report.preview_summary}</p>
-                <hr />
-                <h6>報告第一部分</h6>
-                <p>{report.report_part_1}</p>
-                <hr />
-                <h6>報告第二部分</h6>
-                <p>{report.report_part_2}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<IndustryTable />} />
+        <Route path="/report/:industryName/:reportDate" element={<ReportPage />} />
+      </Routes>
+    </Router>
   );
 }
 

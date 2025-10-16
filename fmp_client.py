@@ -42,6 +42,16 @@ class FMPClient:
         endpoint = f"api/v3/market-capitalization/{symbols_string}"
         market_cap_data = self._request(endpoint)
         return market_cap_data
+    
+    def get_symbol_price(self, symbols: list[str]):
+        """Gets symbol price for a list of symbols in a single API call."""
+        if not symbols:
+            return None
+        symbols_string = ",".join(symbols)
+        endpoint = f"stable/batch-quote/{symbols_string}"
+        symbol_data = self._request(endpoint)
+        symbol_price_data = symbol_data['price']
+        return symbol_price_data
 
     def get_available_sectors(self):
         endpoint = f"stable/available-sectors"

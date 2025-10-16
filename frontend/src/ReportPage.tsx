@@ -1,0 +1,159 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import axios from 'axios';
+import './ReportPage.css';
+
+// Expanded interfaces
+interface Stock {
+  symbol: string;
+  price: number;
+}
+
+interface FullIndustryData {
+  industry_name: string;
+  pe_today: number | null;
+  pe_weekly_change_percent: number | null;
+  preview_summary: string;
+  top_stocks?: Stock[]; // Make top_stocks optional
+}
+
+interface ReportData {
+  title: string;
+  report_part_1: string;
+  report_part_2: string;
+  preview_summary: string;
+}
+
+const ReportPage: React.FC = () => {
+  const { industryName, reportDate } = useParams<{ industryName: string; reportDate: string }>();
+  
+  // State
+  const [report, setReport] = useState<ReportData | null>(null);
+  const [allIndustries, setAllIndustries] = useState<FullIndustryData[]>([]);
+  const [currentIndustry, setCurrentIndustry] = useState<FullIndustryData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [readingTime, setReadingTime] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Scroll handler
+  const handleScroll = () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const scrolled = (scrollTop / docHeight) * 100;
+    setScrollProgress(scrolled);
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Data fetching effect
+  useEffect(() => {
+    setLoading(true);
+
+    const fetchReport = axios.get(`http://localhost:8000/api/industry-reports/${industryName}/${reportDate}`);
+    const fetchAllIndustries = axios.get('http://localhost:8000/api/industry-data');
+
+    Promise.all([fetchReport, fetchAllIndustries])
+      .then(([reportResponse, industriesResponse]) => {
+        const reportData = reportResponse.data;
+        const allIndustriesData = industriesResponse.data.data;
+
+        setReport(reportData);
+        setAllIndustries(allIndustriesData);
+
+        // Find and set the current industry's full data
+        const foundIndustry = allIndustriesData.find((ind: FullIndustryData) => ind.industry_name === industryName);
+        setCurrentIndustry(foundIndustry || null);
+
+        // Calculate reading time
+        const wordsPerMinute = 225;
+        const text = reportData.report_part_1 + " " + reportData.report_part_2;
+        const wordCount = text.split(/\s+/).length;
+        const time = Math.ceil(wordCount / wordsPerMinute);
+        setReadingTime(time);
+        
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching data:', err);
+        setError('Failed to load the report. Please try again later.');
+        setLoading(false);
+      });
+
+  }, [industryName, reportDate]);
+
+  if (loading && !report) {
+    return <div className="report-page-container">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="report-page-container">{error}</div>;
+  }
+
+  return (
+    <>
+      <div className="progress-bar" style={{ width: `${scrollProgress}%` }} />
+      <div className="report-page-container">
+        {/* Left Sidebar */}
+        <aside className="sidebar left-sidebar">
+          <h4>所有產業</h4>
+          <ul className="industry-list">
+            {allIndustries.map(industry => (
+              <li key={industry.industry_name} className={industry.industry_name === industryName ? 'active' : ''}>
+                <Link to={`/report/${industry.industry_name}/${reportDate}`}>
+                  {industry.industry_name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        {/* Main Content */}
+        <main className="report-main-content">
+          <Link to="/" className="back-link">← 返回產業總覽</Link>
+          {report ? (
+            <article className="report-content">
+              <header>
+                <h1>{industryName} 產業週報<br />{reportDate}</h1>
+                <p className="report-summary">{report.preview_summary}</p>
+                <div className="report-meta">
+                  <span className="meta-item">By WSGFO Analyst</span>
+                  <span className="meta-item">{reportDate}</span>
+                  <span className="meta-item">{readingTime} min read</span>
+                </div>
+              </header>
+              <section>
+                <p>{report.report_part_1}</p>
+                <p>{report.report_part_2}</p>
+              </section>
+            </article>
+          ) : (
+            <div>Loading report...</div>
+          )}
+        </main>
+
+        {/* Right Sidebar */}
+        <aside className="sidebar right-sidebar">
+          <h4>重點個股</h4>
+          {currentIndustry && currentIndustry.top_stocks && currentIndustry.top_stocks.length > 0 ? (
+            <ul className="top-stocks-list">
+              {currentIndustry.top_stocks.map(stock => (
+                <li key={stock.symbol}>
+                  <span className="stock-symbol">{stock.symbol}</span>
+                  <span className="stock-price">${stock.price.toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="no-stocks-message">暫無個股資料</p>
+          )}
+        </aside>
+      </div>
+    </>
+  );
+};
+
+export default ReportPage;

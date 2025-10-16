@@ -1,0 +1,106 @@
+.navbar {
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.1rem;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  color: #15171a; /* Black text */
+  transition: background-color 0.3s ease-in-out, border-bottom-color 0.3s ease-in-out;
+  
+  /* Initial transparent state */
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); /* For Safari */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.navbar.scrolled {
+  /* Scrolled solid state */
+  background-color: #ffffff;
+  border-bottom-color: transparent;
+}
+
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 80px;
+  width: 100%;
+  max-width: 1500px;
+  padding: 0 50px;
+}
+
+.navbar-logo {
+  color: #15171a; /* Black text */
+  justify-self: start;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  text-align: center;
+}
+
+.nav-item {
+  height: 80px;
+}
+
+.nav-links {
+  color: #555; /* Dimmer black */
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 0 1.2rem;
+  height: 100%;
+  transition: color 0.2s ease-out;
+}
+
+.nav-links:hover {
+  color: #15171a; /* Brighter on hover */
+}
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.nav-btn {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 8px 22px;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-left: 12px;
+  transition: all 0.3s ease-out;
+}
+
+.login {
+  background-color: transparent;
+  color: #15171a;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.login:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.4);
+}
+
+.signup {
+  background: #15171a;
+  color: #fff;
+  border: none;
+}
+
+.signup:hover {
+  filter: brightness(1.2);
+}

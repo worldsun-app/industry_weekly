@@ -57,7 +57,19 @@ class SP500DataUpdater:
                 logger.warning(f"無法獲取 '{sector}' 產業的市值資料，已略過。")
                 continue
             sorted_stocks = sorted(market_cap_data, key=lambda x: x.get('marketCap', 0), reverse=True)
-            top5_by_sector[sector] = sorted_stocks[:5]
+            top5_stocks = sorted_stocks[:5]
+
+            # 獲取這五家公司的股價
+            top5_symbols = [stock['symbol'] for stock in top5_stocks]
+            if top5_symbols:
+                price_data = self.fmp_client.get_symbol_price(top5_symbols)
+                price_map = {item['symbol']: item.get('price') for item in price_data}
+
+                # 將股價合併回 top5_stocks
+                for stock in top5_stocks:
+                    stock['price'] = price_map.get(stock['symbol'])
+
+            top5_by_sector[sector] = top5_stocks
 
         try:
             collection_name = "industry_data"
@@ -109,7 +121,6 @@ class SP500DataUpdater:
                 # 獲取最新的報告以取得 preview_summary
                 latest_report = get_latest_report(sector)
                 preview_summary = latest_report.get('preview_summary', '') if latest_report else ''
-
                 doc_data = {
                     'sector': sector,
                     'pe_today': pe_today,

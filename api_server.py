@@ -66,7 +66,8 @@ async def get_all_industry_data():
                 "industry_name": doc.id,
                 "pe_today": pe_today,
                 "pe_weekly_change_percent": doc_data.get('pe_weekly_change_percent'),
-                "preview_summary": doc_data.get('preview_summary', '') # 新增預覽摘要
+                "preview_summary": doc_data.get('preview_summary', ''),
+                "top_stocks": doc_data.get('top_stocks', []) 
             })
             
         return {"data": data}
