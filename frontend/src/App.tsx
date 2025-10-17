@@ -6,11 +6,20 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-route
 import ReportPage from './ReportPage';
 import Navbar from './Navbar';
 
+interface EtfRoi {
+  '1D': number | null;
+  '5D': number | null;
+  '1M': number | null;
+  '3M': number | null;
+  '6M': number | null;
+  '1Y': number | null;
+  'pe_today': number | null; // Add pe_today here
+}
+
 interface IndustryData {
   industry_name: string;
-  pe_today: number | null;
-  pe_weekly_change_percent: number | null;
   preview_summary: string;
+  etf_roi: EtfRoi | null;
 }
 
 interface ReportData {
@@ -20,12 +29,22 @@ interface ReportData {
   preview_summary: string;
 }
 
-type SortKey = 'industry_name' | 'pe_today' | 'pe_weekly_change_percent';
+type SortKey = 'industry_name' | '1D' | '5D' | '1M' | '3M' | '6M' | '1Y' | 'pe_today';
 
 interface SortConfig {
   key: SortKey;
   direction: 'ascending' | 'descending';
 }
+
+// Helper component for colored ROI values
+const RoiCell: React.FC<{ value: number | null | undefined, isPercentage?: boolean }> = ({ value, isPercentage = true }) => {
+  if (value === null || value === undefined) {
+    return <td className="text-muted">N/A</td>;
+  }
+  const className = isPercentage ? (value >= 0 ? 'text-success' : 'text-danger') : '';
+  const displayValue = isPercentage ? `${value.toFixed(2)}%` : value.toFixed(2);
+  return <td className={className}>{displayValue}</td>;
+};
 
 export const IndustryTable: React.FC = () => {
   const [industryData, setIndustryData] = useState<IndustryData[]>([]);
@@ -49,8 +68,19 @@ export const IndustryTable: React.FC = () => {
     let sortableData = [...industryData];
     if (sortConfig !== null) {
       sortableData.sort((a, b) => {
-        const valA = a[sortConfig.key];
-        const valB = b[sortConfig.key];
+        let valA: number | string | null = null;
+        let valB: number | string | null = null;
+
+        if (sortConfig.key === 'industry_name') {
+          valA = a.industry_name;
+          valB = b.industry_name;
+        } else if (sortConfig.key === 'pe_today') {
+          valA = a.etf_roi?.pe_today ?? null;
+          valB = b.etf_roi?.pe_today ?? null;
+        } else { // For other ROI keys
+          valA = a.etf_roi ? a.etf_roi[sortConfig.key as keyof EtfRoi] : null;
+          valB = b.etf_roi ? b.etf_roi[sortConfig.key as keyof EtfRoi] : null;
+        }
 
         if (valA === null) return 1;
         if (valB === null) return -1;
@@ -87,12 +117,7 @@ export const IndustryTable: React.FC = () => {
   };
 
   const handleRowClick = (industry: IndustryData) => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
-    navigate(`/report/${industry.industry_name}/${formattedDate}`);
+    navigate(`/report/${industry.industry_name}/latest`);
   };
 
   const handleMouseEnter = (industry: IndustryData, event: React.MouseEvent) => {
@@ -130,40 +155,60 @@ export const IndustryTable: React.FC = () => {
       </div>
       <div className="container mt-5">
         <div className="table-container">
-          <div className="table-header">
-            <h2>產業列表</h2>
+          <div className="table-header" onClick={toggleCollapse} style={{ cursor: 'pointer' }}>
+            <h2>產業列表 {isCollapsed ? '▶' : '▼'}</h2>
           </div>
-          <table className="table b-table fds-all-sectors-overview table-responsive">
-            <thead>
-              <tr>
-                <th className="text-left b-table-sortable-column" onClick={() => requestSort('industry_name')}>
-                  Industry{getSortIndicator('industry_name')}
-                </th>
-                <th className="text-left b-table-sortable-column" onClick={() => requestSort('pe_today')}>
-                  Today's PE{getSortIndicator('pe_today')}
-                </th>
-                <th className="text-left b-table-sortable-column" onClick={() => requestSort('pe_weekly_change_percent')}>
-                  Weekly Change{getSortIndicator('pe_weekly_change_percent')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedIndustryData.map(industry => (
-                <tr 
-                  key={industry.industry_name} 
-                  onClick={() => handleRowClick(industry)}
-                  onMouseEnter={(e) => handleMouseEnter(industry, e)}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <td>{industry.industry_name}</td>
-                  <td>{industry.pe_today ?? 'N/A'}</td>
-                  <td className={`${industry.pe_weekly_change_percent === null ? 'text-muted' : industry.pe_weekly_change_percent >= 0 ? 'text-success' : 'text-danger'}`}>
-                    {industry.pe_weekly_change_percent !== null ? `${industry.pe_weekly_change_percent.toFixed(2)}%` : 'N/A'}
-                  </td>
+          {!isCollapsed && (
+            <table className="table b-table fds-all-sectors-overview table-responsive">
+              <thead>
+                <tr>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('industry_name'); }}>
+                    Industry{getSortIndicator('industry_name')}
+                  </th>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('1D'); }}>
+                    1D{getSortIndicator('1D')}
+                  </th>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('5D'); }}>
+                    5D{getSortIndicator('5D')}
+                  </th>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('1M'); }}>
+                    1M{getSortIndicator('1M')}
+                  </th>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('3M'); }}>
+                    3M{getSortIndicator('3M')}
+                  </th>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('6M'); }}>
+                    6M{getSortIndicator('6M')}
+                  </th>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('1Y'); }}>
+                    1Y{getSortIndicator('1Y')}
+                  </th>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('pe_today'); }}>
+                    Today's PE{getSortIndicator('pe_today')}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sortedIndustryData.map(industry => (
+                  <tr 
+                    key={industry.industry_name} 
+                    onClick={() => handleRowClick(industry)}
+                    onMouseEnter={(e) => handleMouseEnter(industry, e)}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <td>{industry.industry_name}</td>
+                    <RoiCell value={industry.etf_roi ? industry.etf_roi['1D'] : null} />
+                    <RoiCell value={industry.etf_roi ? industry.etf_roi['5D'] : null} />
+                    <RoiCell value={industry.etf_roi ? industry.etf_roi['1M'] : null} />
+                    <RoiCell value={industry.etf_roi ? industry.etf_roi['3M'] : null} />
+                    <RoiCell value={industry.etf_roi ? industry.etf_roi['6M'] : null} />
+                    <RoiCell value={industry.etf_roi ? industry.etf_roi['1Y'] : null} />
+                    <RoiCell value={industry.etf_roi ? industry.etf_roi['pe_today'] : null} isPercentage={false} />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 

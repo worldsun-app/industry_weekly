@@ -28,16 +28,7 @@ class Main:
 
         print(f"成功獲取 {len(sectors)} 個產業。")
         print(sectors)
-        pr_snapshot: list[dict] = []
         today = datetime.date.today()
-        # for i in range(7):
-        #     past_date = today - datetime.timedelta(days=i)
-            # sector_data = self.fmp_client.get_sector_pe_snapshot(past_date)
-            # if sector_data:
-            #     pr_snapshot.append(sector_data)
-        # print(pr_snapshot)
-        
-        # 只處理前3個產業作為範例，以免執行時間過長
         sectors_to_process = sectors[:]
 
         # --- 2. 遍歷每個產業，收集資訊並生成報告 ---

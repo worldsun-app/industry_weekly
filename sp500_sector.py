@@ -59,15 +59,18 @@ class SP500DataUpdater:
             sorted_stocks = sorted(market_cap_data, key=lambda x: x.get('marketCap', 0), reverse=True)
             top5_stocks = sorted_stocks[:5]
 
-            # 獲取這五家公司的股價
+            # 獲取這五家公司的股價和漲跌幅
             top5_symbols = [stock['symbol'] for stock in top5_stocks]
             if top5_symbols:
                 price_data = self.fmp_client.get_symbol_price(top5_symbols)
-                price_map = {item['symbol']: item.get('price') for item in price_data}
+                price_map = {item['symbol']: {'price': item.get('price'), 'changePercentage': item.get('changePercentage')} for item in price_data}
 
-                # 將股價合併回 top5_stocks
+                # 將股價、漲跌幅和市值合併回 top5_stocks
                 for stock in top5_stocks:
-                    stock['price'] = price_map.get(stock['symbol'])
+                    stock_price_info = price_map.get(stock['symbol'])
+                    if stock_price_info:
+                        stock['price'] = stock_price_info['price']
+                        stock['changePercentage'] = stock_price_info['changePercentage']
 
             top5_by_sector[sector] = top5_stocks
 
@@ -82,59 +85,95 @@ class SP500DataUpdater:
         except Exception as e:
             logger.error(f"寫入市值資料到 Firestore 時發生錯誤: {e}")
 
-    def update_weekly_pe_ratios(self):
+    def update_sector_details(self):
+        """
+        遍歷所有已知的產業，更新其報告摘要、對應的 ETF 報酬率資料以及當日的 PE 值。
+        """
         if not self.db:
             logger.error("Firestore client 未初始化，無法執行。")
             return
 
-        logger.info("--- 開始更新 PE 週變動資料 ---")
-        today = date.today()
-        pe_by_sector = defaultdict(list)
+        # 產業名稱與 SPDR ETF Symbol 的對應表
+        SECTOR_ETF_MAP = {
+            "Communication Services": "XLC",
+            "Consumer Cyclical": "XLY",
+            "Consumer Defensive": "XLP",
+            "Energy": "XLE",
+            "Financial Services": "XLF",
+            "Healthcare": "XLV",
+            "Industrials": "XLI",
+            "Basic Materials": "XLB",
+            "Real Estate": "XLRE",
+            "Technology": "XLK",
+            "Utilities": "XLU"
+        }
 
-        for i in range(7):
-            target_date = today - timedelta(days=i)
-            date_str = target_date.strftime('%Y-%m-%d')
-            daily_pe_snapshot = self.fmp_client.get_sector_pe_snapshot(date_str)
-            if daily_pe_snapshot:
-                for item in daily_pe_snapshot:
-                    if item.get('sector') and item.get('pe') is not None:
-                        pe_by_sector[item['sector']].append({'date': date_str, 'pe': item['pe']})
-            time.sleep(0.2)
+        logger.info("--- 開始更新產業詳細資料 (ETF ROI, PE, 摘要) ---")
+        
+        # 1. 先一次性獲取所有產業的當日 PE
+        pe_snapshot = self.fmp_client.get_sector_pe_snapshot()
+        if not pe_snapshot:
+            logger.warning("無法從 FMP 獲取 PE 快照資料，PE 資料將不會被更新。")
+            pe_map = {}
+        else:
+            pe_map = {item.get('sector'): item.get('pe') for item in pe_snapshot}
 
         try:
-            collection_name = "industry_data"
+            # 2. 遍歷 Firestore 中的產業文件進行更新
+            docs = self.db.collection("industry_data").stream()
+            sectors = [doc.id for doc in docs]
+            
             batch = self.db.batch()
-            for sector, history in pe_by_sector.items():
-                if len(history) < 2:
-                    continue
-                
-                # 對歷史紀錄中的所有 PE 值進行四捨五入
-                for item in history:
-                    if item.get('pe') is not None:
-                        item['pe'] = round(item['pe'], 2)
-
-                history.sort(key=lambda x: x['date'], reverse=True)
-                pe_today = history[0]['pe']
-                pe_7_days_ago = history[-1]['pe']
-                pe_weekly_change_percent = ((pe_today - pe_7_days_ago) / pe_7_days_ago) * 100 if pe_7_days_ago != 0 else float('inf')
-
+            for sector in sectors:
                 # 獲取最新的報告以取得 preview_summary
                 latest_report = get_latest_report(sector)
                 preview_summary = latest_report.get('preview_summary', '') if latest_report else ''
+
+                # 準備一個字典來存放所有相關資料
+                etf_roi_data = {}
+
+                # 獲取 ETF 報酬率
+                cleaned_sector = sector.strip()
+                etf_symbol = SECTOR_ETF_MAP.get(cleaned_sector)
+                if etf_symbol:
+                    try:
+                        roi_data = self.fmp_client.get_ETF_ROI(etf_symbol)
+                        if roi_data:
+                            etf_roi_data.update(roi_data)
+                    except Exception as e:
+                        logger.error(f"為 symbol '{etf_symbol}' 獲取 ETF ROI 時發生錯誤: {e}")
+                
+                # 獲取並加入當日的 PE 值
+                pe_value = pe_map.get(sector)
+                if pe_value is not None:
+                    etf_roi_data['pe_today'] = round(pe_value, 2)
+
+                # 準備要寫入的資料
                 doc_data = {
-                    'sector': sector,
-                    'pe_today': pe_today,
-                    'pe_7_days_ago': pe_7_days_ago,
-                    'pe_weekly_change_percent': round(pe_weekly_change_percent, 2),
-                    'pe_history': history,
-                    'preview_summary': preview_summary
+                    'preview_summary': preview_summary,
+                    'etf_roi': etf_roi_data if etf_roi_data else None
                 }
-                doc_ref = self.db.collection(collection_name).document(sector)
+
+                # 3. 獲取並處理一年份的歷史 PE 資料
+                try:
+                    pe_history = self.fmp_client.get_historical_sector_pe(sector)
+                    if pe_history and isinstance(pe_history, list) and len(pe_history) > 0:
+                        pe_values = [item['pe'] for item in pe_history]
+                        pe_high_1y = max(pe_values)
+                        pe_low_1y = min(pe_values)
+
+                        doc_data['pe_high_1y'] = round(pe_high_1y, 2)
+                        doc_data['pe_low_1y'] = round(pe_low_1y, 2)
+                except Exception as e:
+                    logger.error(f"為 sector '{sector}' 處理歷史 PE 時發生錯誤: {e}")
+                
+                doc_ref = self.db.collection("industry_data").document(sector)
                 batch.set(doc_ref, doc_data, merge=True)
+
             batch.commit()
-            logger.info(f"PE 週變動資料已成功合併寫入 '{collection_name}' 集合！")
+            logger.info("產業詳細資料已成功合併寫入 'industry_data' 集合！")
         except Exception as e:
-            logger.error(f"寫入 PE 資料到 Firestore 時發生錯誤: {e}")
+            logger.error(f"更新產業詳細資料到 Firestore 時發生錯誤: {e}")
 
     def update_all_industry_data(self):
         """
@@ -142,7 +181,7 @@ class SP500DataUpdater:
         """
         logger.info("=== 開始全面更新產業資料 ===")
         self.update_top5_by_market_cap_per_sector()
-        self.update_weekly_pe_ratios()
+        self.update_sector_details()
         logger.info("=== 所有產業資料更新完畢 ===")
 
 if __name__ == '__main__':

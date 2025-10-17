@@ -1,6 +1,7 @@
 
 import os
 from google.cloud import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 from datetime import datetime
 
 # --- 憑證除錯 ---
@@ -82,7 +83,7 @@ def get_latest_report(industry_name: str):
         
         # 建立查詢
         query = db.collection(collection_name) \
-                  .where('industry_name', '==', industry_name) \
+                  .where(filter=FieldFilter('industry_name', '==', industry_name)) \
                   .order_by('generated_at', direction=firestore.Query.DESCENDING) \
                   .limit(1)
                   
@@ -98,6 +99,27 @@ def get_latest_report(industry_name: str):
     except Exception as e:
         print(f"An error occurred while fetching the report from Firestore: {e}")
         return None
+
+def save_industry_data(industry_name: str, data: dict):
+    """
+    將產業數據（如 PE 歷史）儲存或合併到 Firestore 的 'industry_data' 集合中。
+
+    Args:
+        industry_name (str): 產業名稱，將作為文件 ID。
+        data (dict): 要儲存的數據。
+    """
+    if not db:
+        print("Firestore client is not available. Cannot save industry data.")
+        return
+
+    try:
+        collection_name = "industry_data"
+        doc_ref = db.collection(collection_name).document(industry_name)
+        # 使用 merge=True，這樣只會更新或新增傳入的欄位，不會覆蓋整個文件
+        doc_ref.set(data, merge=True) 
+        print(f"Successfully saved/merged data for '{industry_name}' in '{collection_name}'.")
+    except Exception as e:
+        print(f"An error occurred while saving industry data to Firestore: {e}")
 
 # --- Example Usage (for testing this file directly) ---
 if __name__ == '__main__':

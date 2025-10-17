@@ -3,26 +3,41 @@ import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import './ReportPage.css';
 
-// Expanded interfaces
 interface Stock {
   symbol: string;
   price: number;
+  marketCap: number;
+  changePercentage: number;
 }
 
 interface FullIndustryData {
   industry_name: string;
-  pe_today: number | null;
-  pe_weekly_change_percent: number | null;
   preview_summary: string;
-  top_stocks?: Stock[]; // Make top_stocks optional
+  etf_roi: any; // Simplified for now
+  top_stocks?: Stock[];
 }
 
 interface ReportData {
   title: string;
+  generated_at: { seconds: number; nanoseconds: number };
   report_part_1: string;
   report_part_2: string;
   preview_summary: string;
 }
+
+// Helper function to format market cap
+const formatMarketCap = (cap: number) => {
+  if (cap >= 1_000_000_000_000) {
+    return `${(cap / 1_000_000_000_000).toFixed(2)}T`;
+  }
+  if (cap >= 1_000_000_000) {
+    return `${(cap / 1_000_000_000).toFixed(2)}B`;
+  }
+  if (cap >= 1_000_000) {
+    return `${(cap / 1_000_000).toFixed(2)}M`;
+  }
+  return cap.toString();
+};
 
 const ReportPage: React.FC = () => {
   const { industryName, reportDate } = useParams<{ industryName: string; reportDate: string }>();
@@ -53,7 +68,11 @@ const ReportPage: React.FC = () => {
   useEffect(() => {
     setLoading(true);
 
-    const fetchReport = axios.get(`http://localhost:8000/api/industry-reports/${industryName}/${reportDate}`);
+    const reportApiUrl = reportDate === 'latest'
+      ? `http://localhost:8000/api/industry-reports/${industryName}/latest`
+      : `http://localhost:8000/api/industry-reports/${industryName}/${reportDate}`;
+
+    const fetchReport = axios.get(reportApiUrl);
     const fetchAllIndustries = axios.get('http://localhost:8000/api/industry-data');
 
     Promise.all([fetchReport, fetchAllIndustries])
@@ -103,7 +122,7 @@ const ReportPage: React.FC = () => {
           <ul className="industry-list">
             {allIndustries.map(industry => (
               <li key={industry.industry_name} className={industry.industry_name === industryName ? 'active' : ''}>
-                <Link to={`/report/${industry.industry_name}/${reportDate}`}>
+                <Link to={`/report/${industry.industry_name}/latest`}>
                   {industry.industry_name}
                 </Link>
               </li>
@@ -117,11 +136,11 @@ const ReportPage: React.FC = () => {
           {report ? (
             <article className="report-content">
               <header>
-                <h1>{industryName} 產業週報<br />{reportDate}</h1>
+                <h1>{industryName} 產業週報</h1>
                 <p className="report-summary">{report.preview_summary}</p>
                 <div className="report-meta">
                   <span className="meta-item">By WSGFO Analyst</span>
-                  <span className="meta-item">{reportDate}</span>
+                  <span className="meta-item">{report.generated_at ? new Date(report.generated_at.seconds * 1000).toLocaleDateString() : ''}</span>
                   <span className="meta-item">{readingTime} min read</span>
                 </div>
               </header>
@@ -137,16 +156,31 @@ const ReportPage: React.FC = () => {
 
         {/* Right Sidebar */}
         <aside className="sidebar right-sidebar">
-          <h4>重點個股</h4>
+          <h4>產業重點個股</h4>
           {currentIndustry && currentIndustry.top_stocks && currentIndustry.top_stocks.length > 0 ? (
-            <ul className="top-stocks-list">
-              {currentIndustry.top_stocks.map(stock => (
-                <li key={stock.symbol}>
-                  <span className="stock-symbol">{stock.symbol}</span>
-                  <span className="stock-price">${stock.price.toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
+            <table className="top-stocks-table">
+              <thead>
+                <tr>
+                  <th>公司</th>
+                  <th>市值</th>
+                  <th>股價</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentIndustry.top_stocks.map(stock => (
+                  <tr key={stock.symbol}>
+                    <td>{stock.symbol}</td>
+                    <td>{formatMarketCap(stock.marketCap)}</td>
+                    <td className={stock.changePercentage >= 0 ? 'text-success' : 'text-danger'}>
+                      ${stock.price?.toFixed(2) ?? 'N/A'}
+                      <span style={{ marginLeft: '5px' }}>
+                        ({stock.changePercentage >= 0 ? '▲' : '▼'}{stock.changePercentage?.toFixed(2) ?? 'N/A'}%)
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
             <p className="no-stocks-message">暫無個股資料</p>
           )}
@@ -155,5 +189,4 @@ const ReportPage: React.FC = () => {
     </>
   );
 };
-
-export default ReportPage;
+export default ReportPage; 

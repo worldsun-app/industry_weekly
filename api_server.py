@@ -58,22 +58,41 @@ async def get_all_industry_data():
         for doc in docs:
             doc_data = doc.to_dict()
             # 確保 pe_history 存在且不為空
-            pe_today = None
-            if doc_data.get('pe_history') and len(doc_data['pe_history']) > 0:
-                pe_today = doc_data['pe_history'][0].get('pe')
+            # pe_today = None
+            # if doc_data.get('pe_history') and len(doc_data['pe_history']) > 0:
+            #     pe_today = doc_data['pe_history'][0].get('pe')
 
             data.append({
                 "industry_name": doc.id,
-                "pe_today": pe_today,
-                "pe_weekly_change_percent": doc_data.get('pe_weekly_change_percent'),
+                "pe_today": doc_data.get('pe_today'),
                 "preview_summary": doc_data.get('preview_summary', ''),
-                "top_stocks": doc_data.get('top_stocks', []) 
+                "top_stocks": doc_data.get('top_stocks', []),
+                "etf_roi": doc_data.get('etf_roi') # 新增 ETF ROI 資料
             })
             
         return {"data": data}
     except Exception as e:
         logger.error(f"An error occurred while fetching data from Firestore: {e}")
         return {"error": str(e)}
+
+@app.get("/api/industry-reports/{industry_name}/latest")
+async def get_latest_industry_report(industry_name: str):
+    """
+    從 Firestore 的 'industry_reports' 集合中，根據產業名稱獲取最新的報告。
+    """
+    if not db:
+        raise HTTPException(status_code=503, detail="Firestore client is not available.")
+
+    try:
+        report = get_latest_report(industry_name)
+        if not report:
+            raise HTTPException(status_code=404, detail=f"No report found for industry '{industry_name}'.")
+        
+        return report
+    except Exception as e:
+        logger.error(f"An error occurred while fetching the latest report for {industry_name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/industry-reports/{industry_name}/{report_date}")
 async def get_single_industry_report(industry_name: str, report_date: str):
