@@ -44,6 +44,7 @@ const ReportPage: React.FC = () => {
   
   // State
   const [report, setReport] = useState<ReportData | null>(null);
+  const [formattedReportDate, setFormattedReportDate] = useState<string>("");
   const [allIndustries, setAllIndustries] = useState<FullIndustryData[]>([]);
   const [currentIndustry, setCurrentIndustry] = useState<FullIndustryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +80,15 @@ const ReportPage: React.FC = () => {
       .then(([reportResponse, industriesResponse]) => {
         const reportData = reportResponse.data;
         const allIndustriesData = industriesResponse.data.data;
+
+        // Format the report date
+        if (reportData.generated_at) {
+          const date = new Date(reportData.generated_at);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          setFormattedReportDate(`${year}-${month}-${day}`);
+        }
 
         setReport(reportData);
         setAllIndustries(allIndustriesData);
@@ -137,12 +147,12 @@ const ReportPage: React.FC = () => {
             <article className="report-content">
               <header>
                 <h1>{industryName} 產業週報</h1>
-                <p className="report-summary">{report.preview_summary}</p>
                 <div className="report-meta">
                   <span className="meta-item">By WSGFO Analyst</span>
-                  <span className="meta-item">{report.generated_at ? new Date(report.generated_at.seconds * 1000).toLocaleDateString() : ''}</span>
+                  <span className="meta-item">{formattedReportDate}</span>
                   <span className="meta-item">{readingTime} min read</span>
                 </div>
+                <p className="report-summary">{report.preview_summary}</p>
               </header>
               <section>
                 <p>{report.report_part_1}</p>

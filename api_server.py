@@ -69,7 +69,8 @@ async def get_all_industry_data():
                 "top_stocks": doc_data.get('top_stocks', []),
                 "etf_roi": doc_data.get('etf_roi'),
                 "pe_high_1y": doc_data.get('pe_high_1y'),
-                "pe_low_1y": doc_data.get('pe_low_1y')
+                "pe_low_1y": doc_data.get('pe_low_1y'),
+                "market_breadth_200d": doc_data.get('market_breadth_200d')
             })
             
         return {"data": data}
@@ -90,6 +91,10 @@ async def get_latest_industry_report(industry_name: str):
         if not report:
             raise HTTPException(status_code=404, detail=f"No report found for industry '{industry_name}'.")
         
+        # Convert Firestore Timestamp to ISO 8601 string for frontend compatibility
+        if 'generated_at' in report and hasattr(report['generated_at'], 'isoformat'):
+            report['generated_at'] = report['generated_at'].isoformat()
+
         return report
     except Exception as e:
         logger.error(f"An error occurred while fetching the latest report for {industry_name}: {e}")

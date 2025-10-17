@@ -28,6 +28,49 @@ body {
   max-width: 1400px; /* Widen the main container */
 }
 
+/* --- S&P 500 Container --- */
+.sp500-container {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  border: 1px solid #dee2e6;
+  margin-bottom: 2rem; /* Space between this and the table */
+}
+
+.sp500-container h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.roi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+}
+
+.roi-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.roi-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.roi-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
 /* --- Removed Card, Styled Table Directly --- */
 .table-container {
   background-color: #ffffff;
@@ -65,14 +108,15 @@ body {
 }
 
 /* Set widths directly on the header columns */
-.table thead th:nth-child(1) { width: 20%; } /* Industry */
-.table thead th:nth-child(2) { width: 8%; }  /* 1D */
-.table thead th:nth-child(3) { width: 8%; }  /* 5D */
-.table thead th:nth-child(4) { width: 8%; }  /* 1M */
-.table thead th:nth-child(5) { width: 8%; }  /* 3M */
-.table thead th:nth-child(6) { width: 8%; }  /* 6M */
-.table thead th:nth-child(7) { width: 8%; }  /* 1Y */
-.table thead th:nth-child(8) { width: 32%; } /* PE Range (1Y) */
+.table thead th:nth-child(1) { width: 15%; } /* Industry */
+.table thead th:nth-child(2) { width: 7%; }  /* 1D */
+.table thead th:nth-child(3) { width: 7%; }  /* 5D */
+.table thead th:nth-child(4) { width: 7%; }  /* 1M */
+.table thead th:nth-child(5) { width: 7%; }  /* 3M */
+.table thead th:nth-child(6) { width: 7%; }  /* 6M */
+.table thead th:nth-child(7) { width: 7%; }  /* 1Y */
+.table thead th:nth-child(8) { width: 25%; } /* PE Range (1Y) */
+.table thead th:nth-child(9) { width: 18%; } /* Market Breadth (200d) */
 
 .table tbody tr {
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;

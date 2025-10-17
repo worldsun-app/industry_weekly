@@ -96,6 +96,29 @@ class FMPClient:
         historical_data = self._request(endpoint, params=params)
         return historical_data
 
+    def get_sma(self, symbol: str):
+        """Gets the latest 200-day SMA for a given symbol."""
+        if not symbol:
+            return None
+        
+        # We only need the latest SMA, so fetching a small recent range is enough.
+        from_date = (datetime.date.today() - datetime.timedelta(days=10)).strftime('%Y-%m-%d')
+
+        endpoint = f"stable/technical-indicators/sma"
+        params = {
+            "symbol": symbol,
+            "periodLength": 200,
+            "timeframe": "1day",
+            "from": from_date
+        }
+        
+        sma_data = self._request(endpoint, params=params)
+        
+        # Return the most recent entry object which contains close, sma, etc.
+        if sma_data and isinstance(sma_data, list) and len(sma_data) > 0:
+            return sma_data[0]
+        return None
+
     def get_available_sectors(self):
         endpoint = f"stable/available-sectors"
         available_sectors = self._request(endpoint)

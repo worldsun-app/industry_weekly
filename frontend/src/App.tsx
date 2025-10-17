@@ -23,6 +23,7 @@ interface IndustryData {
   etf_roi: EtfRoi | null;
   pe_high_1y: number | null;
   pe_low_1y: number | null;
+  market_breadth_200d: number | null; // Add market breadth
 }
 
 interface ReportData {
@@ -32,7 +33,7 @@ interface ReportData {
   preview_summary: string;
 }
 
-type SortKey = 'industry_name' | '1D' | '5D' | '1M' | '3M' | '6M' | '1Y' | 'pe_today';
+type SortKey = 'industry_name' | '1D' | '5D' | '1M' | '3M' | '6M' | '1Y' | 'pe_today' | 'market_breadth_200d';
 
 interface SortConfig {
   key: SortKey;
@@ -40,17 +41,18 @@ interface SortConfig {
 }
 
 // Helper component for colored ROI values
-const RoiCell: React.FC<{ value: number | null | undefined, isPercentage?: boolean }> = ({ value, isPercentage = true }) => {
+const RoiCell: React.FC<{ value: number | null | undefined, isPercentage?: boolean, hasColor?: boolean }> = ({ value, isPercentage = true, hasColor = true }) => {
   if (value === null || value === undefined) {
     return <span className="text-muted">N/A</span>;
   }
-  const className = isPercentage ? (value >= 0 ? 'text-success' : 'text-danger') : '';
+  const className = hasColor && isPercentage ? (value >= 0 ? 'text-success' : 'text-danger') : '';
   const displayValue = isPercentage ? `${value.toFixed(2)}%` : value.toFixed(2);
   return <span className={className}>{displayValue}</span>;
 };
 
 export const IndustryTable: React.FC = () => {
   const [industryData, setIndustryData] = useState<IndustryData[]>([]);
+  const [sp500Data, setSp500Data] = useState<IndustryData | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'industry_name', direction: 'ascending' });
   const [hoveredIndustrySummary, setHoveredIndustrySummary] = useState<string | null>(null);
@@ -60,7 +62,12 @@ export const IndustryTable: React.FC = () => {
   useEffect(() => {
     axios.get('http://localhost:8000/api/industry-data')
       .then(response => {
-        setIndustryData(response.data.data);
+        const allData = response.data.data;
+        const spData = allData.find((d: IndustryData) => d.industry_name === 'S&P 500');
+        const otherIndustries = allData.filter((d: IndustryData) => d.industry_name !== 'S&P 500');
+        
+        setSp500Data(spData || null);
+        setIndustryData(otherIndustries);
       })
       .catch(error => {
         console.error('Error fetching industry data:', error);
@@ -80,6 +87,9 @@ export const IndustryTable: React.FC = () => {
         } else if (sortConfig.key === 'pe_today') {
           valA = a.etf_roi?.pe_today ?? null;
           valB = b.etf_roi?.pe_today ?? null;
+        } else if (sortConfig.key === 'market_breadth_200d') {
+          valA = a.market_breadth_200d ?? null;
+          valB = b.market_breadth_200d ?? null;
         } else { // For other ROI keys
           valA = a.etf_roi ? a.etf_roi[sortConfig.key as keyof EtfRoi] : null;
           valB = b.etf_roi ? b.etf_roi[sortConfig.key as keyof EtfRoi] : null;
@@ -157,6 +167,37 @@ export const IndustryTable: React.FC = () => {
         <p>您每週的產業動態與市場洞察</p>
       </div>
       <div className="container mt-5">
+        {sp500Data && sp500Data.etf_roi && (
+          <div className="sp500-container">
+            <h4>S&P 500 (SPY)</h4>
+            <div className="roi-grid">
+              <div className="roi-item">
+                <span className="roi-label">1D</span>
+                <span className={`roi-value ${sp500Data.etf_roi['1D']! >= 0 ? 'text-success' : 'text-danger'}`}>{sp500Data.etf_roi['1D']?.toFixed(2)}%</span>
+              </div>
+              <div className="roi-item">
+                <span className="roi-label">5D</span>
+                <span className={`roi-value ${sp500Data.etf_roi['5D']! >= 0 ? 'text-success' : 'text-danger'}`}>{sp500Data.etf_roi['5D']?.toFixed(2)}%</span>
+              </div>
+              <div className="roi-item">
+                <span className="roi-label">1M</span>
+                <span className={`roi-value ${sp500Data.etf_roi['1M']! >= 0 ? 'text-success' : 'text-danger'}`}>{sp500Data.etf_roi['1M']?.toFixed(2)}%</span>
+              </div>
+              <div className="roi-item">
+                <span className="roi-label">3M</span>
+                <span className={`roi-value ${sp500Data.etf_roi['3M']! >= 0 ? 'text-success' : 'text-danger'}`}>{sp500Data.etf_roi['3M']?.toFixed(2)}%</span>
+              </div>
+              <div className="roi-item">
+                <span className="roi-label">6M</span>
+                <span className={`roi-value ${sp500Data.etf_roi['6M']! >= 0 ? 'text-success' : 'text-danger'}`}>{sp500Data.etf_roi['6M']?.toFixed(2)}%</span>
+              </div>
+              <div className="roi-item">
+                <span className="roi-label">1Y</span>
+                <span className={`roi-value ${sp500Data.etf_roi['1Y']! >= 0 ? 'text-success' : 'text-danger'}`}>{sp500Data.etf_roi['1Y']?.toFixed(2)}%</span>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="table-container">
           <div className="table-header" onClick={toggleCollapse} style={{ cursor: 'pointer' }}>
             <h2>產業列表 {isCollapsed ? '▶' : '▼'}</h2>
@@ -189,6 +230,9 @@ export const IndustryTable: React.FC = () => {
                   <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('pe_today'); }}>
                     PE Range (1Y){getSortIndicator('pe_today')}
                   </th>
+                  <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('market_breadth_200d'); }}>
+                    Market Breadth (200d){getSortIndicator('market_breadth_200d')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -207,6 +251,9 @@ export const IndustryTable: React.FC = () => {
                         pe_low_1y={industry.pe_low_1y}
                         pe_high_1y={industry.pe_high_1y}
                       />
+                    </td>
+                    <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}>
+                      <RoiCell value={industry.market_breadth_200d} hasColor={false} />
                     </td>
                   </tr>
                 ))}
