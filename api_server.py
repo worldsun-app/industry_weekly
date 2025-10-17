@@ -67,7 +67,9 @@ async def get_all_industry_data():
                 "pe_today": doc_data.get('pe_today'),
                 "preview_summary": doc_data.get('preview_summary', ''),
                 "top_stocks": doc_data.get('top_stocks', []),
-                "etf_roi": doc_data.get('etf_roi') # 新增 ETF ROI 資料
+                "etf_roi": doc_data.get('etf_roi'),
+                "pe_high_1y": doc_data.get('pe_high_1y'),
+                "pe_low_1y": doc_data.get('pe_low_1y')
             })
             
         return {"data": data}

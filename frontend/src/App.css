@@ -25,7 +25,7 @@ body {
 
 /* --- Main Container --- */
 .container.mt-5 {
-  max-width: 1200px; /* Constrain width for better readability */
+  max-width: 1400px; /* Widen the main container */
 }
 
 /* --- Removed Card, Styled Table Directly --- */
@@ -51,6 +51,7 @@ body {
   border-collapse: separate;
   border-spacing: 0;
   width: 100%;
+  table-layout: fixed; /* Use fixed layout for predictable column widths */
 }
 
 .table thead th {
@@ -62,6 +63,16 @@ body {
   padding: 1rem 1.25rem;
   vertical-align: middle;
 }
+
+/* Set widths directly on the header columns */
+.table thead th:nth-child(1) { width: 20%; } /* Industry */
+.table thead th:nth-child(2) { width: 8%; }  /* 1D */
+.table thead th:nth-child(3) { width: 8%; }  /* 5D */
+.table thead th:nth-child(4) { width: 8%; }  /* 1M */
+.table thead th:nth-child(5) { width: 8%; }  /* 3M */
+.table thead th:nth-child(6) { width: 8%; }  /* 6M */
+.table thead th:nth-child(7) { width: 8%; }  /* 1Y */
+.table thead th:nth-child(8) { width: 32%; } /* PE Range (1Y) */
 
 .table tbody tr {
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
@@ -80,9 +91,13 @@ body {
 }
 
 .table td {
-  padding: 1rem 1.25rem;
-  vertical-align: middle;
-  border-top: 1px solid #dee2e6;
+  padding: 1.5rem 1.25rem; /* Increased vertical padding */
+  vertical-align: middle; /* Ensure vertical alignment */
+}
+
+.table td.pe-range-cell {
+  text-align: left; /* Explicitly left-align for this cell */
+  vertical-align: middle; /* Ensure vertical alignment */
 }
 
 .b-table-sortable-column:hover {

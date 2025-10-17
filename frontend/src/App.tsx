@@ -5,6 +5,7 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import ReportPage from './ReportPage';
 import Navbar from './Navbar';
+import PeRatioBar from './PeRatioBar'; // Import the new component
 
 interface EtfRoi {
   '1D': number | null;
@@ -13,13 +14,15 @@ interface EtfRoi {
   '3M': number | null;
   '6M': number | null;
   '1Y': number | null;
-  'pe_today': number | null; // Add pe_today here
+  'pe_today': number | null;
 }
 
 interface IndustryData {
   industry_name: string;
   preview_summary: string;
   etf_roi: EtfRoi | null;
+  pe_high_1y: number | null;
+  pe_low_1y: number | null;
 }
 
 interface ReportData {
@@ -39,11 +42,11 @@ interface SortConfig {
 // Helper component for colored ROI values
 const RoiCell: React.FC<{ value: number | null | undefined, isPercentage?: boolean }> = ({ value, isPercentage = true }) => {
   if (value === null || value === undefined) {
-    return <td className="text-muted">N/A</td>;
+    return <span className="text-muted">N/A</span>;
   }
   const className = isPercentage ? (value >= 0 ? 'text-success' : 'text-danger') : '';
   const displayValue = isPercentage ? `${value.toFixed(2)}%` : value.toFixed(2);
-  return <td className={className}>{displayValue}</td>;
+  return <span className={className}>{displayValue}</span>;
 };
 
 export const IndustryTable: React.FC = () => {
@@ -184,26 +187,27 @@ export const IndustryTable: React.FC = () => {
                     1Y{getSortIndicator('1Y')}
                   </th>
                   <th className="text-left b-table-sortable-column" onClick={(e) => { e.stopPropagation(); requestSort('pe_today'); }}>
-                    Today's PE{getSortIndicator('pe_today')}
+                    PE Range (1Y){getSortIndicator('pe_today')}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {sortedIndustryData.map(industry => (
-                  <tr 
-                    key={industry.industry_name} 
-                    onClick={() => handleRowClick(industry)}
-                    onMouseEnter={(e) => handleMouseEnter(industry, e)}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    <td>{industry.industry_name}</td>
-                    <RoiCell value={industry.etf_roi ? industry.etf_roi['1D'] : null} />
-                    <RoiCell value={industry.etf_roi ? industry.etf_roi['5D'] : null} />
-                    <RoiCell value={industry.etf_roi ? industry.etf_roi['1M'] : null} />
-                    <RoiCell value={industry.etf_roi ? industry.etf_roi['3M'] : null} />
-                    <RoiCell value={industry.etf_roi ? industry.etf_roi['6M'] : null} />
-                    <RoiCell value={industry.etf_roi ? industry.etf_roi['1Y'] : null} />
-                    <RoiCell value={industry.etf_roi ? industry.etf_roi['pe_today'] : null} isPercentage={false} />
+                  <tr key={industry.industry_name} onClick={() => handleRowClick(industry)}>
+                    <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}>{industry.industry_name}</td>
+                    <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}><RoiCell value={industry.etf_roi ? industry.etf_roi['1D'] : null} /></td>
+                    <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}><RoiCell value={industry.etf_roi ? industry.etf_roi['5D'] : null} /></td>
+                    <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}><RoiCell value={industry.etf_roi ? industry.etf_roi['1M'] : null} /></td>
+                    <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}><RoiCell value={industry.etf_roi ? industry.etf_roi['3M'] : null} /></td>
+                    <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}><RoiCell value={industry.etf_roi ? industry.etf_roi['6M'] : null} /></td>
+                    <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}><RoiCell value={industry.etf_roi ? industry.etf_roi['1Y'] : null} /></td>
+                    <td className="pe-range-cell">
+                      <PeRatioBar 
+                        pe_today={industry.etf_roi?.pe_today}
+                        pe_low_1y={industry.pe_low_1y}
+                        pe_high_1y={industry.pe_high_1y}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
