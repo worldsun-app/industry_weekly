@@ -60,7 +60,7 @@ export const IndustryTable: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get('http://localhost:8000/api/industry-data')
+    axios.get('https://industry-weekly.zeabur.app/api/industry-data')
       .then(response => {
         const allData = response.data.data;
         const spData = allData.find((d: IndustryData) => d.industry_name === 'S&P 500');
