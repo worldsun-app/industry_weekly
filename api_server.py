@@ -21,6 +21,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173", # Vite 的預設埠號
     "https://industry-weekly.vercel.app/"
+    "https://industry-weekly.zeabur.app"
 ]
 
 app.add_middleware(
