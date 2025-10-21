@@ -26,7 +26,7 @@ const Navbar: React.FC = () => {
     <nav className={isScrolled ? 'navbar scrolled' : 'navbar'}>
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
-          WSGFO
+          <img src="/wsgfo_logo.png" alt="WSGFO Logo" style={{ height: '40px', marginRight: '0px' }} />
         </Link>
         <ul className="nav-menu">
           <li className="nav-item">

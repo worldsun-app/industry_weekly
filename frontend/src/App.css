@@ -1,40 +1,44 @@
 body {
-  background-color: #f8f9fa; /* Lighter background */
-  color: #212529;
+  background-color: #F2F2F2; /* Light Gray background */
+  color: #1C1D1D;
   min-height: 100vh;
   overflow-y: scroll; /* Always show scrollbar */
 }
 
-/* --- Hero Section (Smaller) --- */
-.hero-section {
-  background: linear-gradient(to right, #6a11cb, #2575fc);
-  color: white;
-  padding: 2.5rem 0;
-  text-align: center;
+.main-content-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
 }
 
-.hero-section h1 {
+.main-title {
+  font-family: "Noto Sans", sans-serif;
   font-size: 2.5rem;
-  font-weight: 700;
+  font-weight: 600;
+  text-align: left;
+  margin-bottom: 0.5rem;
 }
 
-.hero-section p {
-  font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.8);
+.title-divider {
+  border: 0;
+  height: 1px;
+  background: #E0E0E0;
+  margin: 0.5rem 0 1rem;
 }
 
 /* --- Main Container --- */
 .container.mt-5 {
   max-width: 1400px; /* Widen the main container */
+  padding: 0 1.5rem;
 }
 
 /* --- S&P 500 Container --- */
 .sp500-container {
-  background-color: #ffffff;
+  background-color: #FFFFFF;
   border-radius: 0.75rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid #E0E0E0;
   margin-bottom: 2rem; /* Space between this and the table */
 }
 
@@ -55,7 +59,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #f8f9fa;
+  background-color: #F2F2F2;
   padding: 1rem;
   border-radius: 0.5rem;
 }
@@ -73,11 +77,11 @@ body {
 
 /* --- Removed Card, Styled Table Directly --- */
 .table-container {
-  background-color: #ffffff;
+  background-color: #FFFFFF;
   border-radius: 0.75rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid #E0E0E0;
 }
 
 .table-header {
@@ -98,8 +102,8 @@ body {
 }
 
 .table thead th {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
+  background-color: #F2F2F2;
+  border-bottom: 2px solid #E0E0E0;
   border-top: none;
   font-weight: 600;
   text-align: left;
@@ -128,7 +132,7 @@ body {
 }
 
 .table tbody tr:hover {
-  background-color: #ffffff; /* On hover, make it white to pop */
+  background-color: #F8F8F8; /* On hover, make it slightly lighter */
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   cursor: pointer;
@@ -146,13 +150,13 @@ body {
 
 .b-table-sortable-column:hover {
   cursor: pointer;
-  background-color: #e9ecef;
+  background-color: #E0E0E0;
 }
 
 /* --- Tooltip --- */
 .tooltip-custom {
   position: fixed;
-  background-color: #333;
+  background-color: #1C1D1D;
   color: #fff;
   padding: 10px 15px;
   border-radius: 5px;

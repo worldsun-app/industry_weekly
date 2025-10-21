@@ -41,12 +41,12 @@ interface SortConfig {
 }
 
 // Helper component for colored ROI values
-const RoiCell: React.FC<{ value: number | null | undefined, isPercentage?: boolean, hasColor?: boolean }> = ({ value, isPercentage = true, hasColor = true }) => {
+const RoiCell: React.FC<{ value: number | null | undefined, isPercentage?: boolean, hasColor?: boolean, decimalPlaces?: number }> = ({ value, isPercentage = true, hasColor = true, decimalPlaces = 2 }) => {
   if (value === null || value === undefined) {
     return <span className="text-muted">N/A</span>;
   }
   const className = hasColor && isPercentage ? (value >= 0 ? 'text-success' : 'text-danger') : '';
-  const displayValue = isPercentage ? `${value.toFixed(2)}%` : value.toFixed(2);
+  const displayValue = isPercentage ? `${value.toFixed(decimalPlaces)}%` : value.toFixed(decimalPlaces);
   return <span className={className}>{displayValue}</span>;
 };
 
@@ -162,11 +162,9 @@ export const IndustryTable: React.FC = () => {
 
   return (
     <div>
-      <div className='hero-section'>
-        <h1>產業週報</h1>
-        <p>您每週的產業動態與市場洞察</p>
-      </div>
       <div className="container mt-5">
+        <h1 className="main-title">產業週報</h1>
+        <hr className="title-divider" />
         {sp500Data && sp500Data.etf_roi && (
           <div className="sp500-container">
             <h4>S&P 500 (SPY)</h4>
@@ -253,7 +251,7 @@ export const IndustryTable: React.FC = () => {
                       />
                     </td>
                     <td onMouseEnter={(e) => handleMouseEnter(industry, e)} onMouseLeave={handleMouseLeave}>
-                      <RoiCell value={industry.market_breadth_200d} hasColor={false} />
+                      <RoiCell value={industry.market_breadth_200d} hasColor={false} isPercentage={false} decimalPlaces={1} />
                     </td>
                   </tr>
                 ))}

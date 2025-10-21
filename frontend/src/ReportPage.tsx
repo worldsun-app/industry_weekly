@@ -19,7 +19,7 @@ interface FullIndustryData {
 
 interface ReportData {
   title: string;
-  generated_at: { seconds: number; nanoseconds: number };
+  generated_at: string;
   report_part_1: string;
   report_part_2: string;
   preview_summary: string;
@@ -44,13 +44,26 @@ const ReportPage: React.FC = () => {
   
   // State
   const [report, setReport] = useState<ReportData | null>(null);
-  const [formattedReportDate, setFormattedReportDate] = useState<string>("");
   const [allIndustries, setAllIndustries] = useState<FullIndustryData[]>([]);
   const [currentIndustry, setCurrentIndustry] = useState<FullIndustryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [readingTime, setReadingTime] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Helper to format date directly in render
+  const getFormattedDate = (dateString: string | undefined) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (e) {
+      return ''; // Return empty string if date is invalid
+    }
+  };
 
   // Scroll handler
   const handleScroll = () => {
@@ -79,19 +92,12 @@ const ReportPage: React.FC = () => {
     Promise.all([fetchReport, fetchAllIndustries])
       .then(([reportResponse, industriesResponse]) => {
         const reportData = reportResponse.data;
+        console.log("Received report data from backend:", reportData); // Log the received data
         const allIndustriesData = industriesResponse.data.data;
-
-        // Format the report date
-        if (reportData.generated_at) {
-          const date = new Date(reportData.generated_at);
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          setFormattedReportDate(`${year}-${month}-${day}`);
-        }
+        const filteredIndustries = allIndustriesData.filter((ind: FullIndustryData) => ind.industry_name !== 'S&P 500');
 
         setReport(reportData);
-        setAllIndustries(allIndustriesData);
+        setAllIndustries(filteredIndustries);
 
         // Find and set the current industry's full data
         const foundIndustry = allIndustriesData.find((ind: FullIndustryData) => ind.industry_name === industryName);
@@ -149,7 +155,7 @@ const ReportPage: React.FC = () => {
                 <h1>{industryName} 產業週報</h1>
                 <div className="report-meta">
                   <span className="meta-item">By WSGFO Analyst</span>
-                  <span className="meta-item">{formattedReportDate}</span>
+                  <span className="meta-item">{getFormattedDate(report?.generated_at)}</span>
                   <span className="meta-item">{readingTime} min read</span>
                 </div>
                 <p className="report-summary">{report.preview_summary}</p>

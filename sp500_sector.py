@@ -226,7 +226,7 @@ class SP500DataUpdater:
                 
                 # 準備存入資料庫
                 doc_ref = self.db.collection("industry_data").document(sector)
-                batch.set(doc_ref, {"market_breadth_200d": round(breadth_percentage, 2)}, merge=True)
+                batch.set(doc_ref, {"market_breadth_200d": round(breadth_percentage, 1)}, merge=True)
 
         try:
             batch.commit()
@@ -239,9 +239,9 @@ class SP500DataUpdater:
         執行所有產業資料的更新任務。
         """
         logger.info("=== 開始全面更新產業資料 ===")
-        # self.update_top5_by_market_cap_per_sector()
-        # self.update_sector_details()
-        # self.update_sp500_etf_roi()
+        self.update_top5_by_market_cap_per_sector()
+        self.update_sector_details()
+        self.update_sp500_etf_roi()
         self.update_market_breadth()
         logger.info("=== 所有產業資料更新完畢 ===")
 

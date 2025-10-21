@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import firestore
 from dotenv import load_dotenv
+from datetime import datetime
 
 from firestore_service import get_latest_report
 
@@ -70,7 +71,7 @@ async def get_all_industry_data():
                 "etf_roi": doc_data.get('etf_roi'),
                 "pe_high_1y": doc_data.get('pe_high_1y'),
                 "pe_low_1y": doc_data.get('pe_low_1y'),
-                "market_breadth_200d": doc_data.get('market_breadth_200d')
+                "market_breadth_200d": round(doc_data.get('market_breadth_200d'), 1) if isinstance(doc_data.get('market_breadth_200d'), (int, float)) else doc_data.get('market_breadth_200d')
             })
             
         return {"data": data}
@@ -90,10 +91,33 @@ async def get_latest_industry_report(industry_name: str):
         report = get_latest_report(industry_name)
         if not report:
             raise HTTPException(status_code=404, detail=f"No report found for industry '{industry_name}'.")
-        
-        # Convert Firestore Timestamp to ISO 8601 string for frontend compatibility
-        if 'generated_at' in report and hasattr(report['generated_at'], 'isoformat'):
-            report['generated_at'] = report['generated_at'].isoformat()
+
+        # Handle different possible date formats from Firestore
+        if 'generated_at' in report and report['generated_at']:
+            date_val = report['generated_at']
+            dt_obj = None
+            try:
+                # Case 1: It's already a datetime/timestamp object
+                if hasattr(date_val, 'isoformat'):
+                    dt_obj = date_val
+                # Case 2: It's a Chinese string
+                elif isinstance(date_val, str) and '年' in date_val:
+                    s = date_val.replace('年', '-').replace('月', '-').replace('日', '')
+                    parts = s.split(' ')
+                    date_part = parts[0]
+                    ampm_part = parts[1]
+                    time_part = parts[2]
+                    parsed_dt = datetime.strptime(f"{date_part} {time_part}", '%Y-%m-%d %H:%M:%S.%f')
+                    if ampm_part == '下午' and parsed_dt.hour < 12:
+                        parsed_dt = parsed_dt.replace(hour=parsed_dt.hour + 12)
+                    dt_obj = parsed_dt
+                
+                report['generated_at'] = dt_obj.isoformat() if dt_obj else None
+            except (ValueError, IndexError, TypeError) as e:
+                logger.warning(f"Could not parse date '{date_val}': {e}")
+                report['generated_at'] = None
+        else:
+            report['generated_at'] = None
 
         return report
     except Exception as e:
