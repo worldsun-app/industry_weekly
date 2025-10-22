@@ -32,12 +32,12 @@ class SP500DataUpdater:
             logger.error(f"初始化 Firestore client 時發生錯誤: {e}")
             self.db = None
 
-    def update_top5_by_market_cap_per_sector(self):
+    def update_top10_by_market_cap_per_sector(self):
         if not self.db:
             logger.error("Firestore client 未初始化，無法執行。")
             return
 
-        logger.info("--- 開始更新市值前五名資料 ---")
+        logger.info("--- 開始更新市值前十名資料 ---")
         sp500_stocks = self.fmp_client.get_sp500()
         if not sp500_stocks:
             logger.error("無法獲取 S&P 500 列表，任務終止。")
@@ -48,7 +48,7 @@ class SP500DataUpdater:
             if stock.get('sector'):
                 stocks_by_sector[stock['sector']].append(stock)
 
-        top5_by_sector = {}
+        top10_by_sector = {}
         for sector, stocks in stocks_by_sector.items():
             symbols_in_sector = [stock['symbol'] for stock in stocks]
             market_cap_data = self.fmp_client.get_market_caps_for_list(symbols_in_sector)
@@ -56,26 +56,26 @@ class SP500DataUpdater:
                 logger.warning(f"無法獲取 '{sector}' 產業的市值資料，已略過。")
                 continue
             sorted_stocks = sorted(market_cap_data, key=lambda x: x.get('marketCap', 0), reverse=True)
-            top5_stocks = sorted_stocks[:5]
-            top5_symbols = [stock['symbol'] for stock in top5_stocks]
-            if top5_symbols:
-                price_data = self.fmp_client.get_symbol_price(top5_symbols)
+            top10_stocks = sorted_stocks[:10]
+            top10_symbols = [stock['symbol'] for stock in top10_stocks]
+            if top10_symbols:
+                price_data = self.fmp_client.get_symbol_price(top10_symbols)
                 price_map = {item['symbol']: {'price': item.get('price'), 'changePercentage': item.get('changePercentage')} for item in price_data}
-                for stock in top5_stocks:
+                for stock in top10_stocks:
                     stock_price_info = price_map.get(stock['symbol'])
                     if stock_price_info:
                         stock['price'] = stock_price_info['price']
                         stock['changePercentage'] = stock_price_info['changePercentage']
 
-            top5_by_sector[sector] = top5_stocks
+            top10_by_sector[sector] = top10_stocks
         try:
             collection_name = "industry_data"
             batch = self.db.batch()
-            for sector, top_stocks in top5_by_sector.items():
+            for sector, top_stocks in top10_by_sector.items():
                 doc_ref = self.db.collection(collection_name).document(sector)
                 batch.set(doc_ref, {"top_stocks": top_stocks}, merge=True)
             batch.commit()
-            logger.info(f"市值前五名資料已成功合併寫入 '{collection_name}' 集合！")
+            logger.info(f"市值前十名資料已成功合併寫入 '{collection_name}' 集合！")
         except Exception as e:
             logger.error(f"寫入市值資料到 Firestore 時發生錯誤: {e}")
 
@@ -239,10 +239,10 @@ class SP500DataUpdater:
         執行所有產業資料的更新任務。
         """
         logger.info("=== 開始全面更新產業資料 ===")
-        self.update_top5_by_market_cap_per_sector()
-        self.update_sector_details()
-        self.update_sp500_etf_roi()
-        self.update_market_breadth()
+        self.update_top10_by_market_cap_per_sector()
+        # self.update_sector_details()
+        # self.update_sp500_etf_roi()
+        # self.update_market_breadth()
         logger.info("=== 所有產業資料更新完畢 ===")
 
 if __name__ == '__main__':

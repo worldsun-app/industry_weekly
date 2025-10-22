@@ -59,8 +59,10 @@ export const IndustryTable: React.FC = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number; direction: 'up' | 'down' } | null>(null);
   const navigate = useNavigate();
 
+  const API_BASE_URL = '';
+
   useEffect(() => {
-    axios.get('https://industry-weekly.zeabur.app/api/industry-data')
+    axios.get(`${API_BASE_URL}/api/industry-data`)
       .then(response => {
         const allData = response.data.data;
         const spData = allData.find((d: IndustryData) => d.industry_name === 'S&P 500');

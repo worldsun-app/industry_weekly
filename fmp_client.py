@@ -39,8 +39,8 @@ class FMPClient:
         if not symbols:
             return None
         symbols_string = ",".join(symbols)
-        endpoint = f"api/v3/market-capitalization/{symbols_string}"
-        market_cap_data = self._request(endpoint)
+        endpoint = f"stable/market-capitalization-batch"
+        market_cap_data = self._request(endpoint, params={"symbols": symbols_string})
         return market_cap_data
     
     def get_symbol_price(self, symbols: list[str]):

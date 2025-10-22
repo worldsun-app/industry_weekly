@@ -16,13 +16,7 @@ logger = logging.getLogger(__name__)
 
 # --- CORS 中介軟體設定 ---
 # 允許您的 React 前端 (通常在 http://localhost:3000 或類似位址) 存取此 API
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://localhost:5173", # Vite 的預設埠號
-    "https://industry-weekly.vercel.app/"
-    "https://industry-weekly.zeabur.app"
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +37,8 @@ try:
         logger.error("GOOGLE_APPLICATION_CREDENTIALS path is invalid or not set.")
 except Exception as e:
     logger.error(f"Error initializing Firestore client: {e}")
+
+from fastapi.staticfiles import StaticFiles
 
 # --- API 路由 ---
 @app.get("/api/industry-data")
@@ -148,9 +144,10 @@ async def get_single_industry_report(industry_name: str, report_date: str):
         logger.error(f"An error occurred while fetching report for {industry_name} on {report_date}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/")
-def read_root():
-    return {"message": "Industry data API is running."}
+# --- 靜態文件服務 ---
+# 這必須在所有 API 路由之後
+# 它會提供前端應用程式的靜態檔案 (HTML, JS, CSS)
+app.mount("/", StaticFiles(directory="frontend/build", html=True), name="static")
 
 # --- 執行 (用於本地開發) ---
 if __name__ == "__main__":
