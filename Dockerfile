@@ -12,9 +12,11 @@ COPY . .
 # 4. 安裝 requirements.txt 中定義的 Python 依賴
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. 開放容器的 8000 連接埠，以便外部可以存取 API 服務
+# 5. 讓 start.sh 可以被執行
+RUN chmod +x start.sh
+
+# 6. 開放容器的 8000 連接埠，以便外部可以存取 API 服務
 EXPOSE 8000
 
-# 6. 設定預設的啟動指令，預設啟動 API 伺服器
-#    您可以在啟動容器時覆寫這個指令來執行排程器
-CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "8000"]
+# 7. 設定啟動指令為 start.sh
+CMD ["./start.sh"]
