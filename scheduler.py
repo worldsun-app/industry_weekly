@@ -13,12 +13,12 @@ def job_main():
     print("Running main.py...")
     run_main()
 
-# For testing, run every 5 minutes
-schedule.every(1).minutes.do(job_sp500)
-schedule.every(5).minutes.do(job_main)
-# schedule.every().day.at("07:00", taipei_tz).do(job_sp500)
-# schedule.every().monday.at("06:30", taipei_tz).do(job_main)
+taipei_tz = pytz.timezone("Asia/Taipei")
 
+# schedule.every(1).minutes.do(job_sp500)
+# schedule.every(5).minutes.do(job_main)
+schedule.every().day.at("07:00", taipei_tz).do(job_sp500)
+schedule.every().monday.at("06:30", taipei_tz).do(job_main)
 print("Scheduler started. Press Ctrl+C to exit.")
 
 while True:

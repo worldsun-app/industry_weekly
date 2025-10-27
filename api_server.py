@@ -9,13 +9,10 @@ from datetime import datetime
 
 from firestore_service import get_latest_report
 
-# --- 初始化 ---
 load_dotenv()
 app = FastAPI()
 logger = logging.getLogger(__name__)
 
-# --- CORS 中介軟體設定 ---
-# 允許您的 React 前端 (通常在 http://localhost:3000 或類似位址) 存取此 API
 origins = ["*"]
 
 app.add_middleware(
@@ -56,10 +53,6 @@ async def get_all_industry_data():
         data = []
         for doc in docs:
             doc_data = doc.to_dict()
-            # 確保 pe_history 存在且不為空
-            # pe_today = None
-            # if doc_data.get('pe_history') and len(doc_data['pe_history']) > 0:
-            #     pe_today = doc_data['pe_history'][0].get('pe')
 
             data.append({
                 "industry_name": doc.id,
@@ -90,15 +83,12 @@ async def get_latest_industry_report(industry_name: str):
         if not report:
             raise HTTPException(status_code=404, detail=f"No report found for industry '{industry_name}'.")
 
-        # Handle different possible date formats from Firestore
         if 'generated_at' in report and report['generated_at']:
             date_val = report['generated_at']
             dt_obj = None
             try:
-                # Case 1: It's already a datetime/timestamp object
                 if hasattr(date_val, 'isoformat'):
                     dt_obj = date_val
-                # Case 2: It's a Chinese string
                 elif isinstance(date_val, str) and '年' in date_val:
                     s = date_val.replace('年', '-').replace('月', '-').replace('日', '')
                     parts = s.split(' ')
@@ -144,12 +134,6 @@ async def get_single_industry_report(industry_name: str, report_date: str):
         logger.error(f"An error occurred while fetching report for {industry_name} on {report_date}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- 靜態文件服務 ---
-# 這必須在所有 API 路由之後
-# 它會提供前端應用程式的靜態檔案 (HTML, JS, CSS)
-app.mount("/", StaticFiles(directory="frontend/build", html=True), name="static")
-
-# --- 執行 (用於本地開發) ---
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

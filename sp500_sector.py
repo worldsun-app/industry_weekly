@@ -200,7 +200,6 @@ class SP500DataUpdater:
 
             for symbol in symbols:
                 try:
-                    # 獲取最新的技術指標資料 (包含 close 和 sma)
                     indicator_data = self.fmp_client.get_sma(symbol)
                     logger.info(f"  - {symbol}: Indicator data: {indicator_data}") # Log indicator data
 
@@ -212,19 +211,15 @@ class SP500DataUpdater:
                         if current_price is not None and sma_200 is not None:
                             if current_price > sma_200:
                                 above_sma_count += 1
-                    
-                    # API 請求延遲 (0.1秒 * 500家 ~ 50秒)
                     time.sleep(0.1)
 
                 except Exception as e:
                     logger.error(f"處理 {symbol} 時發生錯誤: {e}")
-            
-            # 計算百分比
+
             if total_count > 0:
                 breadth_percentage = (above_sma_count / total_count) * 100
                 logger.info(f"產業 '{sector}' 的市場廣度指標: {above_sma_count}/{total_count} = {breadth_percentage:.2f}%") # Log final calculation
-                
-                # 準備存入資料庫
+
                 doc_ref = self.db.collection("industry_data").document(sector)
                 batch.set(doc_ref, {"market_breadth_200d": round(breadth_percentage, 1)}, merge=True)
 
