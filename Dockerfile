@@ -15,8 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 5. 讓 start.sh 可以被執行
 RUN chmod +x start.sh
 
-# 6. 開放容器的 8000 連接埠，以便外部可以存取 API 服務
-EXPOSE 8000
+# 6. 開放容器的 $PORT 連接埠，以便外部可以存取 API 服務
+ARG PORT=8080
+EXPOSE $PORT
 
 # 7. 設定啟動指令為 start.sh
 CMD ["./start.sh"]

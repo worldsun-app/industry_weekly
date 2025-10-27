@@ -1,4 +1,3 @@
-
 import os
 import logging
 from fastapi import FastAPI, HTTPException
@@ -24,27 +23,40 @@ app.add_middleware(
 )
 
 # --- Firestore 客戶端 ---
+import json
+from google.oauth2 import service_account
+
 db = None
+initialization_error = None
+
 try:
-    cred_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-    if cred_path and os.path.exists(cred_path):
-        db = firestore.Client()
-        logger.info("Firestore client initialized successfully.")
-    else:
-        logger.error("GOOGLE_APPLICATION_CREDENTIALS path is invalid or not set.")
+    # GOOGLE_APPLICATION_CREDENTIALS 環境變數會指向由 Zeabur 掛載的憑證檔案
+    # firestore.Client() 會自動找到並使用這個環境變數
+    db = firestore.Client()
+    logger.info("Firestore client initialized successfully.")
+
 except Exception as e:
-    logger.error(f"Error initializing Firestore client: {e}")
+    initialization_error = str(e)
+    logger.error(f"A critical error occurred during Firestore client initialization: {e}")
 
 from fastapi.staticfiles import StaticFiles
 
 # --- API 路由 ---
+@app.get("/")
+async def read_root():
+    return {"message": "Welcome to the Industry Weekly API!"}
+
 @app.get("/api/industry-data")
 async def get_all_industry_data():
     """
     從 Firestore 的 'industry_data' 集合中獲取所有文件。
     """
     if not db:
-        return {"error": "Firestore client is not available."}
+        error_message = "Firestore client is not available."
+        if initialization_error:
+            # 將捕獲到的具體錯誤訊息回傳給前端，方便除錯
+            error_message += f" Reason: {initialization_error}"
+        raise HTTPException(status_code=503, detail=error_message)
 
     try:
         collection_ref = db.collection('industry_data')
@@ -79,7 +91,7 @@ async def get_latest_industry_report(industry_name: str):
         raise HTTPException(status_code=503, detail="Firestore client is not available.")
 
     try:
-        report = get_latest_report(industry_name)
+        report = get_latest_report(db, industry_name)
         if not report:
             raise HTTPException(status_code=404, detail=f"No report found for industry '{industry_name}'.")
 
@@ -136,4 +148,7 @@ async def get_single_industry_report(industry_name: str, report_date: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    # Read the port from the PORT environment variable, with a default of 8080
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run("api_server:app", host="0.0.0.0", port=port, reload=True)

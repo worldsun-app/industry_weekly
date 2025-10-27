@@ -3,9 +3,6 @@ import logging
 
 from google import genai
 from google.genai import types
-from google.genai.types import GenerateContentConfig
-from google.protobuf.struct_pb2 import Struct
-from google.genai import errors as genai_errors
 
 from openai import OpenAI
 
