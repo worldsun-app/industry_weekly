@@ -240,11 +240,14 @@ class SP500DataUpdater:
         """
         logger.info("=== 開始全面更新產業資料 ===")
         self.update_top10_by_market_cap_per_sector()
-        # self.update_sector_details()
-        # self.update_sp500_etf_roi()
-        # self.update_market_breadth()
+        self.update_sector_details()
+        self.update_sp500_etf_roi()
+        self.update_market_breadth()
         logger.info("=== 所有產業資料更新完畢 ===")
 
-if __name__ == '__main__':
+def run_sp500_update():
     updater = SP500DataUpdater()
     updater.update_all_industry_data()
+
+if __name__ == '__main__':
+    run_sp500_update()

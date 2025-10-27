@@ -83,6 +83,9 @@ class Main:
             logger.info(f"準備將 '{sector}' 的報告儲存至 Firestore...")
             save_report(report_data=report_data)
 
-if __name__ == '__main__':
+def run_main():
     main_app = Main()
     main_app.process_main()
+
+if __name__ == '__main__':
+    run_main()
