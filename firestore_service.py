@@ -5,7 +5,15 @@ from datetime import datetime
 
 # Firestore client will be passed in from api_server.py
 
-def save_report(db: firestore.Client, report_data: dict):
+try:
+    db = firestore.Client(project='industryweekly')
+    print("Firestore client initialized successfully.")
+except Exception as e:
+    print(f"Error initializing Firestore client: {e}")
+    print("Please ensure you have set the GOOGLE_APPLICATION_CREDENTIALS environment variable correctly.")
+    db = None
+
+def save_report(report_data: dict):
     """
     將報告儲存到 Firestore。
 
