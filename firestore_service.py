@@ -37,11 +37,12 @@ def save_report(report_data: dict):
         print(f"An error occurred while saving the report to Firestore: {e}")
         return None
 
-def get_latest_report(industry_name: str):
+def get_latest_report(db: firestore.Client, industry_name: str):
     """
     從 Firestore 取得指定產業的最新報告。
 
     Args:
+        db (firestore.Client): The Firestore client instance.
         industry_name (str): 產業名稱。
 
     Returns:
