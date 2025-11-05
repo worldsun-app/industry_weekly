@@ -104,7 +104,7 @@ class SP500DataUpdater:
         
         pe_snapshot = self.fmp_client.get_sector_pe_snapshot()
         if not pe_snapshot:
-            logger.warning("無法從 FMP 獲取 PE 快照資料，PE 資料將不會被更新。")
+            logger.warning("無法從 FMP 獲取 PE 資料，PE 資料將不會被更新。")
             pe_map = {}
         else:
             pe_map = {item.get('sector'): item.get('pe') for item in pe_snapshot}
@@ -115,7 +115,7 @@ class SP500DataUpdater:
             
             batch = self.db.batch()
             for sector in sectors:
-                latest_report = get_latest_report(sector)
+                latest_report = get_latest_report(self.db, sector)
                 preview_summary = latest_report.get('preview_summary', '') if latest_report else ''
                 etf_roi_data = {}
                 cleaned_sector = sector.strip()
