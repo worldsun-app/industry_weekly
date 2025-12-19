@@ -56,7 +56,7 @@ async def get_all_industry_data():
         if initialization_error:
             # 將捕獲到的具體錯誤訊息回傳給前端，方便除錯
             error_message += f" Reason: {initialization_error}"
-        raise HTTPException(status_code=503, detail=error_message)
+        raise HTTPException(status_code=503)
 
     try:
         collection_ref = db.collection('industry_data')
@@ -88,7 +88,7 @@ async def get_latest_industry_report(industry_name: str):
     從 Firestore 的 'industry_reports' 集合中，根據產業名稱獲取最新的報告。
     """
     if not db:
-        raise HTTPException(status_code=503, detail="Firestore client is not available.")
+        raise HTTPException(status_code=503)
 
     try:
         report = get_latest_report(db, industry_name)
@@ -122,7 +122,7 @@ async def get_latest_industry_report(industry_name: str):
         return report
     except Exception as e:
         logger.error(f"An error occurred while fetching the latest report for {industry_name}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500)
 
 
 @app.get("/api/industry-reports/{industry_name}/{report_date}")
@@ -144,7 +144,7 @@ async def get_single_industry_report(industry_name: str, report_date: str):
         return doc.to_dict()
     except Exception as e:
         logger.error(f"An error occurred while fetching report for {industry_name} on {report_date}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500)
 
 if __name__ == "__main__":
     import uvicorn
