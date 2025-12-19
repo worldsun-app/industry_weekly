@@ -14,8 +14,7 @@ class Main:
     def __init__(self):
         self.fmp_client = FMPClient(api_key=os.getenv('FMP_API_KEY'))
         google_api_key = os.getenv('GENAI_API_KEY')
-        open_ai_api_key = os.getenv('OPEN_AI_API')
-        self.report_generator = ReportGenerator(api_key=google_api_key, open_ai_api_key=open_ai_api_key)
+        self.report_generator = ReportGenerator(api_key=google_api_key)
 
     def process_main(self):
         print("開始執行產業週報生成專案...")

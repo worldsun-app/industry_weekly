@@ -2,7 +2,8 @@ import os
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 from datetime import datetime
-
+# from dotenv import load_dotenv
+# load_dotenv()
 # Firestore client will be passed in from api_server.py
 
 try:

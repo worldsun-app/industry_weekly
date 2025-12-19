@@ -4,8 +4,6 @@ import logging
 from google import genai
 from google.genai import types
 
-from openai import OpenAI
-
 logger = logging.getLogger(__name__)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -17,14 +15,13 @@ def _load_prompt_template(name: str) -> str:
     return ""
 
 class ReportGenerator:
-    def __init__(self, api_key: str, open_ai_api_key: str):
+    def __init__(self, api_key: str):
         if not api_key:
             raise ValueError("❌ 錯誤：Google API 金鑰未提供。")
         
         self.client = genai.Client(api_key=api_key)
         grounding_tool = types.Tool(google_search=types.GoogleSearch())
         self.config = types.GenerateContentConfig(tools=[grounding_tool])
-        self.open_client = OpenAI(api_key=open_ai_api_key)
 
     def generate_industry_events(self, sector: str, date: datetime) -> str:
         template = _load_prompt_template("report_stage1")
